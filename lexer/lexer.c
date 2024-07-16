@@ -25,6 +25,10 @@ char peekNext(Lexer* lexer) {
 
 Token* createToken(TokenType type, const char* value, int line, int column) {
     Token* token = (Token*)malloc(sizeof(Token));
+    if (!token) {
+        fprintf(stderr, "Memory allocation failed for token.\n");
+        exit(EXIT_FAILURE);
+    }
     token->type = type;
     token->value = strdup(value);
     token->line = line;
@@ -34,6 +38,10 @@ Token* createToken(TokenType type, const char* value, int line, int column) {
 
 Lexer* createLexer(const char* source) {
     Lexer* lexer = (Lexer*)malloc(sizeof(Lexer));
+    if (!lexer) {
+        fprintf(stderr, "Memory allocation failed for lexer.\n");
+        exit(EXIT_FAILURE);
+    }
     lexer->source = source;
     lexer->length = strlen(source);
     lexer->position = 0;
@@ -43,12 +51,18 @@ Lexer* createLexer(const char* source) {
 }
 
 void destroyLexer(Lexer* lexer) {
-    free(lexer);
+    if (lexer) {
+        free(lexer);
+    }
 }
 
 void destroyToken(Token* token) {
-    free(token->value);
-    free(token);
+    if (token) {
+        if (token->value) {
+            free(token->value);
+        }
+        free(token);
+    }
 }
 
 Token* nextToken(Lexer* lexer) {
@@ -69,6 +83,10 @@ Token* nextToken(Lexer* lexer) {
             }
             int length = lexer->position - start;
             char* value = (char*)malloc(length + 1);
+            if (!value) {
+                fprintf(stderr, "Memory allocation failed for identifier.\n");
+                exit(EXIT_FAILURE);
+            }
             strncpy(value, lexer->source + start, length);
             value[length] = '\0';
             Token* token = createToken(TOKEN_IDENTIFIER, value, lexer->line, lexer->column - length);
@@ -89,6 +107,10 @@ Token* nextToken(Lexer* lexer) {
                 }
                 int length = lexer->position - start;
                 char* value = (char*)malloc(length + 1);
+                if (!value) {
+                    fprintf(stderr, "Memory allocation failed for float literal.\n");
+                    exit(EXIT_FAILURE);
+                }
                 strncpy(value, lexer->source + start, length);
                 value[length] = '\0';
                 Token* token = createToken(TOKEN_FLOAT, value, lexer->line, lexer->column - length);
@@ -97,6 +119,10 @@ Token* nextToken(Lexer* lexer) {
             } else {
                 int length = lexer->position - start;
                 char* value = (char*)malloc(length + 1);
+                if (!value) {
+                    fprintf(stderr, "Memory allocation failed for integer literal.\n");
+                    exit(EXIT_FAILURE);
+                }
                 strncpy(value, lexer->source + start, length);
                 value[length] = '\0';
                 Token* token = createToken(TOKEN_INT, value, lexer->line, lexer->column - length);
@@ -107,14 +133,8 @@ Token* nextToken(Lexer* lexer) {
 
         // Handle single-character tokens
         switch (current) {
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case '=':
-            case ';':
-            case '(':
-            case ')':
+            case '+': case '-': case '*': case '/': case '=': 
+            case ';': case '(': case ')':
                 {
                     char value[2] = {current, '\0'};
                     Token* token = createToken(TOKEN_OPERATOR, value, lexer->line, lexer->column);
@@ -122,6 +142,7 @@ Token* nextToken(Lexer* lexer) {
                     return token;
                 }
             default:
+                fprintf(stderr, "Unexpected character '%c' at line %d, column %d.\n", current, lexer->line, lexer->column);
                 advance(lexer);
                 break;
         }
