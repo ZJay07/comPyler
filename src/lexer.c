@@ -2,7 +2,6 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdbool.h>
 
 static const char *start;
@@ -83,8 +82,8 @@ static bool match(char expected) {
     return true;
 }
 
-static TokenType checkKeyword(int start, int length, const char *rest, TokenType type) {
-    if (current - start == length && memcmp(start + start, rest, length) == 0) {
+static TokenType checkKeyword(int startIdx, int length, const char *rest, TokenType type) {
+    if (current - start == startIdx + length && memcmp(start + startIdx, rest, length) == 0) {
         return type;
     }
     return TOKEN_IDENTIFIER;
