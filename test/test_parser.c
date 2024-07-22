@@ -14,6 +14,7 @@ void test_var_declaration() {
     ASSERT_STR_EQ("int", ast->data.block.declarations->data.varDecl.varType);
     ASSERT_STR_EQ("x", ast->data.block.declarations->data.varDecl.name);
     ASSERT_EQ(AST_LITERAL, ast->data.block.declarations->data.varDecl.initializer->type);
+    printf("Value: %s\n", ast->data.block.declarations->data.varDecl.initializer->data.literal.value);
     ASSERT_STR_EQ("10", ast->data.block.declarations->data.varDecl.initializer->data.literal.value);
 
     freeAST(ast);

@@ -6,8 +6,32 @@
 #include <stdbool.h>
 #include <ast.h>
 
+// Custom implementation of strndup
+char* custom_strndup(const char* s, size_t n) {
+    char* p = (char*)malloc(n + 1);
+    if (p) {
+        strncpy_s(p, n + 1, s, n);
+        p[n] = '\0';
+    }
+    return p;
+}
+
 static Token currentToken;
 static Token previousToken;
+
+// Function prototypes
+static void advance();
+static void consume(TokenType type, const char* message);
+static ASTNode* expression();
+static ASTNode* declaration();
+static ASTNode* varDeclaration();
+static ASTNode* funcDeclaration();
+static ASTNode* statement();
+static ASTNode* block();
+static ASTNode* exprStatement();
+static ASTNode* primary();
+static ASTNode* parseBinaryExpr(int precedence, ASTNode* left);
+static ASTNode* arguments();
 
 static void advance() {
     previousToken = currentToken;
@@ -34,43 +58,21 @@ static void consume(TokenType type, const char* message) {
     }
 }
 
-static ASTNode* expression();
-static ASTNode* declaration();
-static ASTNode* varDeclaration();
-static ASTNode* funcDeclaration();
-static ASTNode* statement();
-static ASTNode* block();
-static ASTNode* exprStatement();
-static ASTNode* primary();
-static ASTNode* parseBinaryExpr(int precedence, ASTNode* left);
-static ASTNode* arguments();
-
 static ASTNode* newLiteralNode(const char* value) {
     ASTNode* node = newASTNode(AST_LITERAL);
-    node->data.literal.value = _strdup(value);
+    node->data.literal.value = custom_strndup(value, strlen(value));
     return node;
 }
 
 static ASTNode* newIdentifierNode(const char* name) {
     ASTNode* node = newASTNode(AST_IDENTIFIER);
-    node->data.identifier.name = _strdup(name);
-    return node;
-}
-
-static ASTNode* expression() {
-    ASTNode* node = primary();
-
-    while (check(TOKEN_PLUS) || check(TOKEN_MINUS) || check(TOKEN_STAR) || check(TOKEN_SLASH)) {
-        char operator = currentToken.type;
-        advance();
-        node = parseBinaryExpr(operator, node);
-    }
-
+    node->data.identifier.name = custom_strndup(name, strlen(name));
     return node;
 }
 
 static ASTNode* primary() {
     if (match(TOKEN_NUMBER)) {
+        // Create a new literal node with the value of the token
         return newLiteralNode(previousToken.start);
     }
 
@@ -78,7 +80,7 @@ static ASTNode* primary() {
         const char* name = previousToken.start;
         if (match(TOKEN_LPAREN)) {
             ASTNode* node = newASTNode(AST_CALL_EXPR);
-            node->data.callExpr.callee = _strdup(name);
+            node->data.callExpr.callee = custom_strndup(name, previousToken.length);
             node->data.callExpr.arguments = arguments();
             consume(TOKEN_RPAREN, "Expect ')' after arguments.");
             return node;
@@ -100,7 +102,22 @@ static ASTNode* parseBinaryExpr(int precedence, ASTNode* left) {
     ASTNode* node = newASTNode(AST_BINARY_EXPR);
     node->data.binaryExpr.left = left;
     node->data.binaryExpr.operator = previousToken.type;
-    node->data.binaryExpr.right = primary();
+
+    // Parse the right-hand side of the binary expression
+    node->data.binaryExpr.right = primary();  // Use the appropriate parsing function
+
+    return node;
+}
+
+static ASTNode* expression() {
+    ASTNode* node = primary();
+
+    while (check(TOKEN_PLUS) || check(TOKEN_MINUS) || check(TOKEN_STAR) || check(TOKEN_SLASH)) {
+        char operator = currentToken.type;
+        advance();
+        node = parseBinaryExpr(operator, node);
+    }
+
     return node;
 }
 
@@ -116,7 +133,7 @@ static ASTNode* varDeclaration() {
     ASTNode* node = newASTNode(AST_VAR_DECL);
 
     // Capture the variable type
-    node->data.varDecl.varType = strndup(previousToken.start, previousToken.length);
+    node->data.varDecl.varType = custom_strndup(previousToken.start, previousToken.length);
     printf("Parsing variable declaration: type='%s'\n", node->data.varDecl.varType);
 
     // Consume the variable name
@@ -125,7 +142,7 @@ static ASTNode* varDeclaration() {
         fprintf(stderr, "Error: Expect variable name. Found: Type=%d, Lexeme='%.*s', Line=%d\n", previousToken.type, previousToken.length, previousToken.start, previousToken.line);
         exit(1);
     }
-    node->data.varDecl.name = strndup(previousToken.start, previousToken.length);
+    node->data.varDecl.name = custom_strndup(previousToken.start, previousToken.length);
     printf("Variable name: '%s'\n", node->data.varDecl.name);
 
     // Consume the '=' token
@@ -146,10 +163,10 @@ static ASTNode* varDeclaration() {
 
 static ASTNode* funcDeclaration() {
     ASTNode* node = newASTNode(AST_FUNC_DECL);
-    node->data.funcDecl.returnType = _strdup(previousToken.start);
+    node->data.funcDecl.returnType = custom_strndup(previousToken.start, previousToken.length);
     printf("Parsing function declaration: return type='%s'\n", node->data.funcDecl.returnType);
     consume(TOKEN_IDENTIFIER, "Expect function name.");
-    node->data.funcDecl.name = _strdup(previousToken.start);
+    node->data.funcDecl.name = custom_strndup(previousToken.start, previousToken.length);
     printf("Function name: '%s'\n", node->data.funcDecl.name);
     consume(TOKEN_LPAREN, "Expect '(' after function name.");
 
@@ -159,9 +176,9 @@ static ASTNode* funcDeclaration() {
         ASTNode* param = node->data.funcDecl.params;
         while (true) {
             consume(TOKEN_INT, "Expect parameter type.");
-            param->data.param.paramType = _strdup(previousToken.start);
+            param->data.param.paramType = custom_strndup(previousToken.start, previousToken.length);
             consume(TOKEN_IDENTIFIER, "Expect parameter name.");
-            param->data.param.name = _strdup(previousToken.start);
+            param->data.param.name = custom_strndup(previousToken.start, previousToken.length);
             printf("Parameter: %s %s\n", param->data.param.paramType, param->data.param.name);
             if (!match(TOKEN_COMMA)) break;
             param->next = newASTNode(AST_PARAM);
