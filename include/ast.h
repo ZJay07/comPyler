@@ -10,7 +10,8 @@ typedef enum {
     AST_BINARY_EXPR,
     AST_LITERAL,
     AST_IDENTIFIER,
-    AST_CALL_EXPR
+    AST_CALL_EXPR,
+    AST_RETURN_STMT
 } ASTNodeType;
 
 typedef struct ASTNode {
@@ -70,6 +71,11 @@ typedef struct ASTNode {
             char* callee;
             struct ASTNode* arguments;
         } callExpr;
+
+        // Return statement
+        struct {
+            struct ASTNode* value;
+        } returnStmt;
     } data;
 } ASTNode;
 

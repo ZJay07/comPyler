@@ -94,6 +94,7 @@ static TokenType identifierType() {
         case 'i': return checkKeyword(1, 2, "nt", TOKEN_INT);
         case 'f': return checkKeyword(1, 3, "unc", TOKEN_FUNC);
         case 's': return checkKeyword(1, 2, "tr", TOKEN_STR);
+        case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN); // Added this line for 'return' keyword
     }
     return TOKEN_IDENTIFIER;
 }
@@ -117,7 +118,7 @@ static Token string() {
     if (isAtEnd()) return errorToken("Unterminated string.");
 
     advance(); // Closing quote
-    return makeToken(TOKEN_STRING);
+    return makeToken(TOKEN_STRING);`
 }
 
 Token scanToken() {

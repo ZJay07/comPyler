@@ -24,11 +24,12 @@ static void advance();
 static void consume(TokenType type, const char* message);
 static ASTNode* expression();
 static ASTNode* declaration();
-static ASTNode* varDeclaration();
-static ASTNode* funcDeclaration();
+static ASTNode* varDeclaration(TokenType type);
+static ASTNode* funcDeclaration(TokenType type);
 static ASTNode* statement();
 static ASTNode* block();
 static ASTNode* exprStatement();
+static ASTNode* returnStatement();
 static ASTNode* primary();
 static ASTNode* parseBinaryExpr(int precedence, ASTNode* left);
 static ASTNode* arguments();
@@ -98,7 +99,6 @@ static ASTNode* primary() {
     exit(1);
 }
 
-
 static ASTNode* parseBinaryExpr(int precedence, ASTNode* left) {
     ASTNode* node = newASTNode(AST_BINARY_EXPR);
     node->data.binaryExpr.left = left;
@@ -130,15 +130,21 @@ static ASTNode* arguments() {
     return node;
 }
 
-static ASTNode* varDeclaration() {
+static ASTNode* varDeclaration(TokenType type) {
     ASTNode* node = newASTNode(AST_VAR_DECL);
 
-    // Capture the variable type
-    node->data.varDecl.varType = custom_strndup(previousToken.start, previousToken.length);
+    // Set the variable type from the captured type token
+    if (type == TOKEN_INT) {
+        node->data.varDecl.varType = custom_strndup("int", 3);
+    } else if (type == TOKEN_FLOAT) {
+        node->data.varDecl.varType = custom_strndup("float", 5);
+    } else if (type == TOKEN_STR) {
+        node->data.varDecl.varType = custom_strndup("str", 3);
+    }
+
     printf("Parsing variable declaration: type='%s'\n", node->data.varDecl.varType);
 
-    // Consume the variable name
-    advance();
+    // The previous token is the variable name
     if (previousToken.type != TOKEN_IDENTIFIER) {
         fprintf(stderr, "Error: Expect variable name. Found: Type=%d, Lexeme='%.*s', Line=%d\n", previousToken.type, previousToken.length, previousToken.start, previousToken.line);
         exit(1);
@@ -162,13 +168,28 @@ static ASTNode* varDeclaration() {
     return node;
 }
 
-static ASTNode* funcDeclaration() {
+static ASTNode* funcDeclaration(TokenType type) {
     ASTNode* node = newASTNode(AST_FUNC_DECL);
-    node->data.funcDecl.returnType = custom_strndup(previousToken.start, previousToken.length);
+
+    // Set the function return type from the captured type token
+    if (type == TOKEN_INT) {
+        node->data.funcDecl.returnType = custom_strndup("int", 3);
+    } else if (type == TOKEN_FLOAT) {
+        node->data.funcDecl.returnType = custom_strndup("float", 5);
+    } else if (type == TOKEN_STR) {
+        node->data.funcDecl.returnType = custom_strndup("str", 3);
+    }
+
     printf("Parsing function declaration: return type='%s'\n", node->data.funcDecl.returnType);
-    consume(TOKEN_IDENTIFIER, "Expect function name.");
+
+    // Consume the function name
+    if (previousToken.type != TOKEN_IDENTIFIER) {
+        fprintf(stderr, "Error: Expect function name. Found: Type=%d, Lexeme='%.*s', Line=%d\n", previousToken.type, previousToken.length, previousToken.start, previousToken.line);
+        exit(1);
+    }
     node->data.funcDecl.name = custom_strndup(previousToken.start, previousToken.length);
     printf("Function name: '%s'\n", node->data.funcDecl.name);
+    
     consume(TOKEN_LPAREN, "Expect '(' after function name.");
 
     // Parse parameters
@@ -176,7 +197,7 @@ static ASTNode* funcDeclaration() {
         node->data.funcDecl.params = newASTNode(AST_PARAM);
         ASTNode* param = node->data.funcDecl.params;
         while (true) {
-            consume(TOKEN_INT, "Expect parameter type.");
+            advance();
             param->data.param.paramType = custom_strndup(previousToken.start, previousToken.length);
             consume(TOKEN_IDENTIFIER, "Expect parameter name.");
             param->data.param.name = custom_strndup(previousToken.start, previousToken.length);
@@ -217,17 +238,31 @@ static ASTNode* exprStatement() {
     return node;
 }
 
+static ASTNode* returnStatement() {
+    ASTNode* node = newASTNode(AST_RETURN_STMT);
+    if (!check(TOKEN_SEMICOLON)) {
+        node->data.returnStmt.value = expression();
+    }
+    consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+    return node;
+}
+
 static ASTNode* statement() {
+    if (match(TOKEN_RETURN)) return returnStatement();
     if (match(TOKEN_LBRACE)) return block();
     return exprStatement();
 }
 
 static ASTNode* declaration() {
     if (match(TOKEN_INT) || match(TOKEN_FLOAT) || match(TOKEN_STR)) {
+        TokenType type = previousToken.type; // Capture the type token
         if (check(TOKEN_IDENTIFIER)) {
-            return varDeclaration();
-        } else if (check(TOKEN_FUNC)) {
-            return funcDeclaration();
+            advance(); // Advance to the identifier
+            if (check(TOKEN_LPAREN)) {
+                return funcDeclaration(type); // Pass the type token
+            } else {
+                return varDeclaration(type); // Pass the type token
+            }
         }
     }
     return statement();

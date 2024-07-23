@@ -21,7 +21,8 @@ typedef enum {
     TOKEN_COMMA,
     TOKEN_SEMICOLON,
     TOKEN_EOF,
-    TOKEN_ERROR
+    TOKEN_ERROR,
+    TOKEN_RETURN
 } TokenType;
 
 typedef struct {
