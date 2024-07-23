@@ -58,9 +58,9 @@ static void consume(TokenType type, const char* message) {
     }
 }
 
-static ASTNode* newLiteralNode(const char* value) {
+static ASTNode* newLiteralNode(const char* value, int length) {
     ASTNode* node = newASTNode(AST_LITERAL);
-    node->data.literal.value = custom_strndup(value, strlen(value));
+    node->data.literal.value = custom_strndup(value, length);
     return node;
 }
 
@@ -73,7 +73,7 @@ static ASTNode* newIdentifierNode(const char* name) {
 static ASTNode* primary() {
     if (match(TOKEN_NUMBER)) {
         // Create a new literal node with the value of the token
-        return newLiteralNode(previousToken.start);
+        return newLiteralNode(previousToken.start, previousToken.length);
     }
 
     if (match(TOKEN_IDENTIFIER)) {
@@ -97,6 +97,7 @@ static ASTNode* primary() {
     fprintf(stderr, "Error: Unexpected token '%.*s'.\n", currentToken.length, currentToken.start);
     exit(1);
 }
+
 
 static ASTNode* parseBinaryExpr(int precedence, ASTNode* left) {
     ASTNode* node = newASTNode(AST_BINARY_EXPR);
