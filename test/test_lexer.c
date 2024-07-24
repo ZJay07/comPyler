@@ -7,7 +7,7 @@ void printToken(Token token) {
 }
 
 void runTests() {
-    const char *source = "int x = 10;\nfunc add(int a, int b) { return a + b; }";
+    const char *source = "int x = 10;\n int def add(int a, int b) { return a + b; }";
     initLexer(source);
 
     Token token;
