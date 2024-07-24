@@ -118,7 +118,7 @@ static Token string() {
     if (isAtEnd()) return errorToken("Unterminated string.");
 
     advance(); // Closing quote
-    return makeToken(TOKEN_STRING);`
+    return makeToken(TOKEN_STRING);
 }
 
 Token scanToken() {

@@ -6,9 +6,9 @@ typedef enum {
     TOKEN_FLOAT,
     TOKEN_STR,
     TOKEN_FUNC,
+    TOKEN_RETURN,
     TOKEN_IDENTIFIER,
     TOKEN_NUMBER,
-    TOKEN_STRING,
     TOKEN_PLUS,
     TOKEN_MINUS,
     TOKEN_STAR,
@@ -20,19 +20,19 @@ typedef enum {
     TOKEN_RBRACE,
     TOKEN_COMMA,
     TOKEN_SEMICOLON,
+    TOKEN_STRING,
     TOKEN_EOF,
-    TOKEN_ERROR,
-    TOKEN_RETURN
+    TOKEN_ERROR
 } TokenType;
 
 typedef struct {
     TokenType type;
-    const char *start;
+    const char* start;
     int length;
     int line;
 } Token;
 
-void initLexer(const char *source);
+void initLexer(const char* source);
 Token scanToken();
 
 #endif // LEXER_H

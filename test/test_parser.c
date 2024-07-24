@@ -46,19 +46,34 @@ void test_func_declaration() {
 }
 
 void test_expression_statement() {
-    const char *source = "a + b;";
+    const char *source = "int a = 1; int b=1; a+b;";
     initLexer(source);
     ASTNode *ast = parse();
 
     ASSERT_EQ(AST_BLOCK, ast->type);
-    ASSERT_EQ(AST_EXPR_STMT, ast->data.block.declarations->type);
-    ASSERT_EQ(AST_BINARY_EXPR, ast->data.block.declarations->data.exprStmt.expression->type);
-    ASSERT_STR_EQ("a", ast->data.block.declarations->data.exprStmt.expression->data.binaryExpr.left->data.identifier.name);
-    ASSERT_EQ('+', ast->data.block.declarations->data.exprStmt.expression->data.binaryExpr.operator);
-    ASSERT_STR_EQ("b", ast->data.block.declarations->data.exprStmt.expression->data.binaryExpr.right->data.identifier.name);
+    
+    ASTNode* decl = ast->data.block.declarations;
+    ASSERT_EQ(AST_VAR_DECL, decl->type);
+    ASSERT_STR_EQ("int", decl->data.varDecl.varType);
+    ASSERT_STR_EQ("a", decl->data.varDecl.name);
+    ASSERT_STR_EQ("1", decl->data.varDecl.initializer->data.literal.value);
+
+    decl = decl->next;
+    ASSERT_EQ(AST_VAR_DECL, decl->type);
+    ASSERT_STR_EQ("int", decl->data.varDecl.varType);
+    ASSERT_STR_EQ("b", decl->data.varDecl.name);
+    ASSERT_STR_EQ("1", decl->data.varDecl.initializer->data.literal.value);
+
+    decl = decl->next;
+    ASSERT_EQ(AST_EXPR_STMT, decl->type);
+    ASSERT_EQ(AST_BINARY_EXPR, decl->data.exprStmt.expression->type);
+    ASSERT_STR_EQ("a", decl->data.exprStmt.expression->data.binaryExpr.left->data.identifier.name);
+    ASSERT_EQ(TOKEN_PLUS, decl->data.exprStmt.expression->data.binaryExpr.operator);
+    ASSERT_STR_EQ("b", decl->data.exprStmt.expression->data.binaryExpr.right->data.identifier.name);
 
     freeAST(ast);
 }
+
 
 int main() {
     RUN_TEST(test_var_declaration);

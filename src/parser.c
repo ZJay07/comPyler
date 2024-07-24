@@ -65,28 +65,19 @@ static ASTNode* newLiteralNode(const char* value, int length) {
     return node;
 }
 
-static ASTNode* newIdentifierNode(const char* name) {
+static ASTNode* newIdentifierNode(const char* name, int length) {
     ASTNode* node = newASTNode(AST_IDENTIFIER);
-    node->data.identifier.name = custom_strndup(name, strlen(name));
+    node->data.identifier.name = custom_strndup(name, length);
     return node;
 }
 
 static ASTNode* primary() {
     if (match(TOKEN_NUMBER)) {
-        // Create a new literal node with the value of the token
         return newLiteralNode(previousToken.start, previousToken.length);
     }
 
     if (match(TOKEN_IDENTIFIER)) {
-        const char* name = previousToken.start;
-        if (match(TOKEN_LPAREN)) {
-            ASTNode* node = newASTNode(AST_CALL_EXPR);
-            node->data.callExpr.callee = custom_strndup(name, previousToken.length);
-            node->data.callExpr.arguments = arguments();
-            consume(TOKEN_RPAREN, "Expect ')' after arguments.");
-            return node;
-        }
-        return newIdentifierNode(name);
+        return newIdentifierNode(previousToken.start, previousToken.length);
     }
 
     if (match(TOKEN_LPAREN)) {
@@ -100,26 +91,42 @@ static ASTNode* primary() {
 }
 
 static ASTNode* parseBinaryExpr(int precedence, ASTNode* left) {
-    ASTNode* node = newASTNode(AST_BINARY_EXPR);
-    node->data.binaryExpr.left = left;
-    node->data.binaryExpr.operator = previousToken.type;
+    while (true) {
+        // Capture the current operator type
+        TokenType operatorType = currentToken.type;
 
-    // Parse the right-hand side of the binary expression
-    node->data.binaryExpr.right = primary();  // Use the appropriate parsing function
+        // Check if it's a binary operator
+        if (operatorType != TOKEN_PLUS && operatorType != TOKEN_MINUS &&
+            operatorType != TOKEN_STAR && operatorType != TOKEN_SLASH) {
+            return left; // If not an operator, return the left operand
+        }
 
-    return node;
+        printf("Operator found: %.*s\n", currentToken.length, currentToken.start);
+
+        advance(); // Consume the operator
+
+        // Parse the right-hand side expression
+        ASTNode* right = primary();
+        if (!right) {
+            fprintf(stderr, "Error: Failed to parse right operand of binary expression.\n");
+            exit(1);
+        }
+
+        // Create a new binary expression node
+        ASTNode* node = newASTNode(AST_BINARY_EXPR);
+        node->data.binaryExpr.left = left;
+        node->data.binaryExpr.operator = operatorType; // Set the operator
+        node->data.binaryExpr.right = right;
+
+        printf("Binary expression parsed: left='%s', operator='%d', right='%s'\n",
+               left->data.identifier.name, operatorType, right->data.identifier.name);
+
+        left = node; // Update left to the new binary expression node
+    }
 }
 
 static ASTNode* expression() {
-    ASTNode* node = primary();
-
-    while (check(TOKEN_PLUS) || check(TOKEN_MINUS) || check(TOKEN_STAR) || check(TOKEN_SLASH)) {
-        char operator = currentToken.type;
-        advance();
-        node = parseBinaryExpr(operator, node);
-    }
-
-    return node;
+    return parseBinaryExpr(0, primary());
 }
 
 static ASTNode* arguments() {
