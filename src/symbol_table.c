@@ -1,6 +1,7 @@
 #include "symbol_table.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 SymbolTable* createSymbolTable(SymbolTable *parent) {
     SymbolTable *table = (SymbolTable *)malloc(sizeof(SymbolTable));
@@ -10,23 +11,28 @@ SymbolTable* createSymbolTable(SymbolTable *parent) {
 }
 
 void addSymbol(SymbolTable *table, const char *name, const char *type) {
-    Symbol *symbol = (Symbol *)malloc(sizeof(Symbol));
-    symbol->name = _strdup(name);  // Use _strdup
-    symbol->type = _strdup(type);  // Use _strdup
-    symbol->scope = 0;  // Define scope level appropriately
-    symbol->next = table->head;
-    table->head = symbol;
+    Symbol *sym = (Symbol *)malloc(sizeof(Symbol));
+    sym->name = _strdup(name);
+    sym->type = _strdup(type);
+    sym->next = table->head;
+    table->head = sym;
+    printf("Added symbol: %s\n", name); // Debugging
 }
 
 Symbol* lookupSymbol(SymbolTable *table, const char *name) {
-    for (SymbolTable *current = table; current != NULL; current = current->parent) {
-        for (Symbol *sym = current->head; sym != NULL; sym = sym->next) {
+    printf("lookupSymbol: Looking for %s\n", name); // Debugging
+    while (table) {
+        for (Symbol *sym = table->head; sym != NULL; sym = sym->next) {
+            printf("Checking symbol: %s\n", sym->name); // Debugging
             if (strcmp(sym->name, name) == 0) {
+                printf("Symbol found: %s\n", sym->name); // Debugging
                 return sym;
             }
         }
+        table = table->parent;
     }
-    return NULL;  // Not found
+    printf("Symbol not found: %s\n", name); // Debugging
+    return NULL;
 }
 
 void freeSymbolTable(SymbolTable *table) {

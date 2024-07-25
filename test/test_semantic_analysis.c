@@ -15,7 +15,7 @@ void mockError(const char *format, va_list args) {
 }
 
 void test_undeclared_variable() {
-    // lastError[0] = '\0';
+    lastError[0] = '\0';
     ASTNode varUse = {.type = AST_IDENTIFIER, .data.identifier.name = "x"};
 
     setErrorFunction(mockError);
@@ -32,14 +32,19 @@ void test_redeclaration_in_same_scope() {
     ASTNode varDecl1 = {.type = AST_VAR_DECL, .data.varDecl.varType = "int", .data.varDecl.name = "x"};
     ASTNode varDecl2 = {.type = AST_VAR_DECL, .data.varDecl.varType = "int", .data.varDecl.name = "x"};
 
-    setErrorFunction(mockError);  // Ensure mockError is set
-
+    setErrorFunction(mockError);
     enterScope();
+
+    printf("Analyzing first declaration...\n");
     analyzeNode(&varDecl1);
+    printf("First declaration analyzed. lastError: %s\n", lastError);
+
+    printf("Analyzing second declaration...\n");
     analyzeNode(&varDecl2);
+    printf("Second declaration analyzed. lastError: %s\n", lastError);
 
     printf("Expected: '%s'\n", "Error: Variable 'x' already declared.");
-    printf("Actual:   '%s'\n", lastError);  // Debugging output
+    printf("Actual:   '%s'\n", lastError);
 
     ASSERT_STR_EQ("Error: Variable 'x' already declared.", lastError);
 

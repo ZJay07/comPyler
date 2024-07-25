@@ -33,8 +33,10 @@ void exitScope() {
 }
 
 void analyzeVariableDeclaration(ASTNode *node) {
-    if (lookupSymbol(currentScope, node->data.varDecl.name)) {
-        error("Error: Variable '%s' already declared.", node->data.varDecl.name); // Use error
+    Symbol *sym = lookupSymbol(currentScope, node->data.varDecl.name);
+    if (sym) {
+        printf("Error triggered for variable '%s' already declared.\n", node->data.varDecl.name); // Debugging
+        error("Error: Variable '%s' already declared.", node->data.varDecl.name);
         return;
     }
     addSymbol(currentScope, node->data.varDecl.name, node->data.varDecl.varType);
@@ -49,14 +51,13 @@ void analyzeExpression(ASTNode *node) {
     }
 }
 
-
 void analyzeNode(ASTNode *node) {
     if (node == NULL) return;
 
     switch (node->type) {
         case AST_VAR_DECL:
+            printf("Analyzing variable declaration: %s\n", node->data.varDecl.name); // Debugging
             analyzeVariableDeclaration(node);
-            analyzeExpression(node->data.varDecl.initializer);  // Check initializer expression
             break;
         case AST_BLOCK:
             enterScope();
@@ -66,7 +67,7 @@ void analyzeNode(ASTNode *node) {
             exitScope();
             break;
         case AST_FUNC_DECL:
-            // Similar logic for functions, handling parameters and function body
+            // Add function analysis logic here
             break;
         default:
             analyzeExpression(node);
